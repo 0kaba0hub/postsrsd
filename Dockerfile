@@ -6,6 +6,7 @@ RUN apk add --no-cache \
     hiredis-dev \
     sqlite-dev \
     libseccomp-dev \
+    bsd-compat-headers \
     git ca-certificates
 WORKDIR /src
 COPY . .
