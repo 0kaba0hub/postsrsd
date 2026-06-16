@@ -1,6 +1,7 @@
 FROM ubuntu:24.04 AS builder
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    cmake make gcc musl-dev musl-tools dpkg-dev gperf ca-certificates \
+    cmake make gcc musl-dev musl-tools dpkg-dev gperf \
+    libconfuse-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . .
@@ -13,9 +14,11 @@ RUN mkdir _build && cd _build && \
       -DBUILD_TESTING=OFF \
       -DWITH_SQLITE=OFF \
       -DWITH_REDIS=OFF \
+      -DWITH_MILTER=OFF \
       -DWITH_SECCOMP=OFF \
       -DGENERATE_SRS_SECRET=OFF \
-      -DFETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER && \
+      -DINSTALL_SYSTEMD_SERVICE=OFF \
+      -DINSTALL_SYSTEMD_SYSUSERS=OFF && \
     make
 
 FROM alpine:3.23
