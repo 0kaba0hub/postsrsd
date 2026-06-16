@@ -10,7 +10,8 @@ REDIS_ADDR="${SRS_REDIS_ADDR:-}"
 install -m 600 /dev/null /run/postsrsd.secret
 printf '%s\n' "${SECRET}" > /run/postsrsd.secret
 
-cat > /etc/postsrsd.conf <<CONF
+mkdir -p /usr/local/etc
+cat > /usr/local/etc/postsrsd.conf <<CONF
 domains = { "${DOMAIN}" }
 secrets-file = "/run/postsrsd.secret"
 milter = inet:0.0.0.0:${MILTER_PORT}
@@ -21,7 +22,7 @@ seccomp = off
 CONF
 
 if [ -n "${REDIS_ADDR}" ]; then
-    printf 'envelope-database = "redis:%s"\n' "${REDIS_ADDR}" >> /etc/postsrsd.conf
+    printf 'envelope-database = "redis:%s"\n' "${REDIS_ADDR}" >> /usr/local/etc/postsrsd.conf
 fi
 
 exec /usr/local/sbin/postsrsd
