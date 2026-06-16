@@ -5,6 +5,7 @@ DOMAIN="${SRS_DOMAIN:-example.com}"
 SECRET="${SRS_SECRET:-changeme}"
 MILTER_PORT="${SRS_MILTER_PORT:-10001}"
 SOCKETMAP_PORT="${SRS_SOCKETMAP_PORT:-10003}"
+REDIS_ADDR="${SRS_REDIS_ADDR:-}"
 
 install -m 600 /dev/null /run/postsrsd.secret
 printf '%s\n' "${SECRET}" > /run/postsrsd.secret
@@ -18,5 +19,9 @@ chroot-dir = ""
 unprivileged-user = ""
 seccomp = off
 CONF
+
+if [ -n "${REDIS_ADDR}" ]; then
+    printf 'envelope-database = "redis:%s"\n' "${REDIS_ADDR}" >> /etc/postsrsd.conf
+fi
 
 exec /usr/local/sbin/postsrsd
