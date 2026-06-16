@@ -10,6 +10,15 @@ on:
       - "Dockerfile"
       - "docker/**"
       - ".github/workflows/docker.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "Dockerfile"
+      - "docker/**"
+      - ".github/workflows/docker.yml"
   workflow_dispatch:
 
 env:
@@ -43,13 +52,13 @@ jobs:
           images: ${{ env.IMAGE }}
           tags: |
             type=sha,prefix=,format=short
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push
         uses: docker/build-push-action@v7.2.0
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
