@@ -2,7 +2,7 @@ FROM alpine:3.23 AS builder
 RUN apk add --no-cache \
     cmake make gcc g++ musl-dev \
     autoconf automake libtool \
-    libconfuse-dev \
+    confuse-dev \
     hiredis-dev \
     sqlite-dev \
     libseccomp-dev \
@@ -25,7 +25,7 @@ RUN mkdir _build && cd _build && \
 FROM alpine:3.23
 RUN apk add --no-cache \
     ca-certificates \
-    libconfuse \
+    confuse \
     hiredis \
     sqlite-libs \
     libseccomp
