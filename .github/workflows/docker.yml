@@ -2,7 +2,7 @@ name: Docker
 
 on:
   push:
-    branches: [main]
+    branches: [yarilo-docker]
     paths:
       - "src/**"
       - "cmake/**"
@@ -11,7 +11,7 @@ on:
       - "docker/**"
       - ".github/workflows/docker.yml"
   pull_request:
-    branches: [main]
+    branches: [yarilo-docker]
     paths:
       - "src/**"
       - "cmake/**"
@@ -52,7 +52,7 @@ jobs:
           images: ${{ env.IMAGE }}
           tags: |
             type=sha,prefix=,format=short
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/yarilo-docker' }}
 
       - name: Build and push
         uses: docker/build-push-action@v7.2.0
