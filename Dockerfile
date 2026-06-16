@@ -33,5 +33,5 @@ RUN apk add --no-cache \
 COPY --from=builder /install/usr/local/sbin/postsrsd /usr/local/sbin/postsrsd
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh /usr/local/sbin/postsrsd
-EXPOSE 10003
+EXPOSE 10001 10003
 ENTRYPOINT ["/entrypoint.sh"]
