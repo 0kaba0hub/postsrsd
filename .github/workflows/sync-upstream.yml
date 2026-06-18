@@ -52,18 +52,40 @@ jobs:
           UPSTREAM=$(git rev-parse upstream/main)
           echo "old_sha=$OLD" >> "$GITHUB_OUTPUT"
           echo "new_sha=$UPSTREAM" >> "$GITHUB_OUTPUT"
-          if [ "$OLD" = "$UPSTREAM" ]; then
+
+          # already up to date: upstream/main is already an ancestor of our HEAD
+          if git merge-base --is-ancestor upstream/main HEAD; then
             echo "advanced=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::main already at upstream tip ($OLD)"
+            echo "::notice::main already contains upstream tip ($UPSTREAM)"
             exit 0
           fi
-          if ! git merge-base --is-ancestor HEAD upstream/main; then
-            echo "::error::main mirror has diverged from upstream/main — manual fix required"
-            exit 1
+
+          # find common ancestor to detect divergence
+          BASE=$(git merge-base HEAD upstream/main)
+
+          # BASE must equal HEAD or HEAD^ (our HEAD may have one overlay commit on top of a prior upstream tip)
+          if [ "$BASE" != "$OLD" ]; then
+            PARENT=$(git rev-parse HEAD^ 2>/dev/null || true)
+            if [ -z "$PARENT" ] || [ "$BASE" != "$PARENT" ]; then
+              echo "::error::main mirror has diverged from upstream/main — manual fix required"
+              exit 1
+            fi
           fi
-          AHEAD=$(git rev-list --count "$OLD..$UPSTREAM")
-          echo "::notice::Fast-forwarding main by $AHEAD commit(s): $OLD -> $UPSTREAM"
-          git merge --ff-only upstream/main
+
+          AHEAD=$(git rev-list --count "$BASE..upstream/main")
+          echo "::notice::Advancing main by $AHEAD upstream commit(s): $OLD -> $UPSTREAM"
+
+          # move to upstream tip
+          git reset --hard upstream/main
+
+          # restore our .github/workflows to avoid needing 'workflows' permission on push
+          git checkout "$OLD" -- .github/workflows/
+
+          # commit restoration only if upstream changed any workflow files
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: restore fork workflows after upstream sync"
+          fi
+
           git push origin main
           echo "advanced=true" >> "$GITHUB_OUTPUT"
 
