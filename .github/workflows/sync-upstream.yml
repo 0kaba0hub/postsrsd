@@ -86,7 +86,7 @@ jobs:
             git commit -m "chore: restore fork workflows after upstream sync"
           fi
 
-          git push origin main
+          git push --force origin main
           echo "advanced=true" >> "$GITHUB_OUTPUT"
 
   rebase-patches:
