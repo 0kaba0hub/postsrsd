@@ -34,6 +34,9 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          # PAT with 'workflow' scope: the default GITHUB_TOKEN cannot push
+          # changes under .github/workflows/**, which upstream syncs touch.
+          token: ${{ secrets.SYNC_PAT }}
 
       - name: Configure git identity
         run: |
@@ -78,10 +81,14 @@ jobs:
           # move to upstream tip
           git reset --hard upstream/main
 
-          # restore our .github/workflows to avoid needing 'workflows' permission on push
+          # Keep only the fork's own workflows on main: drop any workflow files
+          # upstream added, then restore our set. A plain 'git checkout OLD --'
+          # would leave upstream-added workflows (e.g. nonlinux.yml) in place.
+          rm -rf .github/workflows
           git checkout "$OLD" -- .github/workflows/
+          git add -A .github/workflows
 
-          # commit restoration only if upstream changed any workflow files
+          # commit restoration only if the workflow set differs from upstream
           if ! git diff --cached --quiet; then
             git commit -m "chore: restore fork workflows after upstream sync"
           fi
@@ -99,6 +106,9 @@ jobs:
         with:
           ref: yarilo-docker
           fetch-depth: 0
+          # PAT with 'workflow' scope: yarilo-docker carries the fork workflows,
+          # so its force-push also needs permission to touch .github/workflows/**.
+          token: ${{ secrets.SYNC_PAT }}
 
       - name: Configure git identity
         run: |
