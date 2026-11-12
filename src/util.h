@@ -134,6 +134,7 @@ struct sandbox;
 typedef struct sandbox sandbox_t;
 
 sandbox_t* sandbox_init();
+bool sandbox_allow_database(sandbox_t* sandbox);
 bool sandbox_enable(sandbox_t* sandbox);
 void sandbox_release(sandbox_t* sandbox);
 

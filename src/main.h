@@ -33,6 +33,7 @@ struct postsrsd
     file_watch_t* file_watch;
     int target_uid, target_gid;
     size_t connection_limit;
+    sandbox_t* sandbox;
 };
 typedef struct postsrsd postsrsd_t;
 

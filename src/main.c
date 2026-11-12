@@ -46,7 +46,6 @@ static volatile sig_atomic_t reload_requested = 0, shutdown_requested = 0;
 static bool files_changed = false, files_changed_unsafe = false;
 static time_t last_file_watch_event = 0;
 static bool sd_notify_support = false;
-static sandbox_t* sandbox = NULL;
 
 void init_state(postsrsd_t* state)
 {
@@ -60,6 +59,7 @@ void init_state(postsrsd_t* state)
     state->target_uid = 0;
     state->target_gid = 0;
     state->connection_limit = 0;
+    state->sandbox = NULL;
 }
 
 void finalize_state(postsrsd_t* state)
@@ -94,6 +94,11 @@ void finalize_state(postsrsd_t* state)
     {
         cfg_free(state->cfg);
         state->cfg = NULL;
+    }
+    if (state->sandbox != NULL)
+    {
+        sandbox_release(state->sandbox);
+        state->sandbox = NULL;
     }
 }
 
@@ -162,8 +167,7 @@ static bool check_unprivileged_work(postsrsd_t* state)
                 cfg_getstr(state->cfg, "envelope-database"), true);
             if (db == NULL)
                 exit(EXIT_FAILURE);
-            if (cfg_getbool(state->cfg, "seccomp") && sandbox != NULL
-                && !sandbox_enable(sandbox))
+            if (state->sandbox != NULL && !sandbox_enable(state->sandbox))
             {
                 log_fatal("failed to enable sandboxing for worker processes");
             }
@@ -248,8 +252,7 @@ static bool prepare_client(postsrsd_t* state, int conn, database_t** db)
     signal_set_handler(SIGALRM, on_timeout);
     signal_reset_handler(SIGTERM);
     signal_reset_handler(SIGINT);
-    if (cfg_getbool(state->cfg, "seccomp") && sandbox != NULL
-        && !sandbox_enable(sandbox))
+    if (state->sandbox != NULL && !sandbox_enable(state->sandbox))
     {
         log_error("failed to activate seccomp sandboxing");
         return false;
@@ -686,6 +689,25 @@ static bool setup_state(int argc, char** argv, postsrsd_t* state)
     if (!unprivileged_user_from_config(new_state.cfg, &new_state.target_uid,
                                        &new_state.target_gid))
         goto fail;
+    if (cfg_getbool(new_state.cfg, "seccomp"))
+    {
+        state->sandbox = sandbox_init();
+        if (state->sandbox != NULL)
+        {
+            if (cfg_getint(state->cfg, "original-envelope")
+                == SRS_ENVELOPE_DATABASE)
+            {
+
+                if (!sandbox_allow_database(state->sandbox))
+                {
+                    sandbox_release(state->sandbox);
+                    state->sandbox = NULL;
+                }
+            }
+        }
+        if (state->sandbox == NULL)
+            log_warn("seccomp sandbox is unavailable");
+    }
     if (!check_unprivileged_work(&new_state))
         goto fail;
     if (config_changed_str(state->cfg, new_state.cfg, "socketmap"))
@@ -833,9 +855,6 @@ int main(int argc, char** argv)
 #    endif
     if (!setup_state(argc, argv, &state))
         goto shutdown;
-    sandbox = sandbox_init();
-    if (sandbox == NULL)
-        log_warn("seccomp sandbox is unavailable");
     const char* pid_file = cfg_getstr(state.cfg, "pid-file");
     if (NONEMPTY_STRING(pid_file))
     {
@@ -969,7 +988,6 @@ int main(int argc, char** argv)
                                 exit(EXIT_FAILURE);
                         }
                         finalize_state(&state);
-                        sandbox_release(sandbox);
                         pid_set_destroy(P);
                         exit(EXIT_SUCCESS);
                     }
@@ -991,7 +1009,6 @@ shutdown:
     if (pf != NULL)
         fclose(pf);
     finalize_state(&state);
-    sandbox_release(sandbox);
     collect_finished_workers(P);
     pid_set_kill(P, SIGTERM);
     pid_set_wait(P);
