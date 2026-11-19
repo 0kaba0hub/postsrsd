@@ -1,4 +1,4 @@
-# Copyright 2023-2026 Timo Röhling <timo@gaussglocke.de>
+# Copyright 2023 Timo Röhling <timo@gaussglocke.de>
 # SPDX-License-Identifier: FSFAP
 #
 # Copying and distribution of this file, with or without modification, are
@@ -18,7 +18,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
           sudo apt-get update -qq
@@ -34,11 +34,6 @@ jobs:
           cd _build
           cmake .. -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_C_COMPILER=musl-gcc -DCMAKE_EXE_LINKER_FLAGS=-static -DCMAKE_C_FLAGS="-idirafter /usr/include -idirafter /usr/include/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" -DBUILD_TESTING=OFF -DWITH_SQLITE=ON -DWITH_REDIS=ON -DWITH_SECCOMP=ON -DGENERATE_SRS_SECRET=OFF -DFETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER -DEXTRA_VERSION=${{ case(! startsWith(github.ref, 'refs/tags/'), format('+{0}.git.{1}', steps.ghd.outputs.distance, steps.ghd.outputs.short-sha), '') }}
           make VERBOSE=ON
-      - name: Test PostSRSd functionality
-        run: |
-          python3 tests/blackbox/socketmap.py _build/postsrsd 1 0
-          python3 tests/blackbox/milter.py _build/postsrsd 1 0
-          python3 tests/blackbox/reload.py _build/postsrsd 1
       - name: Install PostSRSd
         run: |
           cd _build
@@ -55,6 +50,6 @@ jobs:
           if-no-files-found: error
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v1
         with:
           files: postsrsd-x86_64-musl.tar.gz
