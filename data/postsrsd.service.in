@@ -9,6 +9,7 @@
 Description=Sender Rewriting Scheme daemon for Postfix
 Before=postfix.service
 After=network.target
+ConditionFileNotEmpty=@POSTSRSD_CONFIGDIR@/@PROJECT_NAME@.conf
 
 [Service]
 Type=notify-reload
@@ -29,7 +30,7 @@ ProtectHostname=yes
 ProtectKernelLogs=yes
 ProtectKernelModules=yes
 ProtectKernelTunables=yes
-ProtectProc=noaccess
+ProtectProc=invisible
 ProtectSystem=strict
 ReadWritePaths=/var/spool/postfix @POSTSRSD_CHROOTDIR@
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
